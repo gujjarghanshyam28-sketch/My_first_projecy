@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management System</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#687386;--blue:#2563eb;--line:#e5eaf2;--red:#dc2626;--green:#15803d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:linear-gradient(120deg,#172554,#2563eb);color:white;padding:24px 18px}
+.wrap{max-width:1100px;margin:auto}header h1{margin:0;font-size:clamp(24px,5vw,34px)}header p{margin:6px 0 0;color:#dbeafe}
+main{max-width:1100px;margin:22px auto;padding:0 14px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.card,.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 4px 16px #1725540a}
+.stat-label{color:var(--muted);font-size:13px}.stat-number{font-size:28px;font-weight:750;margin-top:4px}
+.layout{display:grid;grid-template-columns: minmax(260px, .8fr) minmax(0,1.7fr);gap:16px}
+h2{font-size:19px;margin:0 0 14px}label{display:block;font-size:13px;font-weight:650;margin:12px 0 5px}
+input,select{width:100%;padding:11px 12px;border:1px solid #cfd7e5;border-radius:9px;background:white;font:inherit;color:var(--ink)}
+input:focus,select:focus{outline:2px solid #bfdbfe;border-color:var(--blue)}
+button{border:0;border-radius:9px;padding:10px 14px;font:inherit;font-weight:650;cursor:pointer}
+.primary{background:var(--blue);color:white;width:100%;margin-top:15px}.secondary{background:#eaf1ff;color:#1d4ed8}.danger{background:#fee2e2;color:#b91c1c;padding:7px 10px}.edit{background:#e0f2fe;color:#075985;padding:7px 10px}
+.toolbar{display:flex;gap:9px;align-items:center;margin-bottom:12px}.toolbar input{flex:1}
+.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:560px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);font-size:14px}th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.actions{display:flex;gap:6px}.empty{text-align:center;color:var(--muted);padding:28px}
+.note{margin:16px 0 0;padding:12px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;color:#9a3412;font-size:13px}
+footer{text-align:center;color:var(--muted);padding:24px 12px;font-size:13px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.stats{gap:8px}.card{padding:12px}.stat-number{font-size:24px}.toolbar{flex-wrap:wrap}.toolbar input{min-width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>Student Management System</h1><p>BCA Final Year Project · Student Records Dashboard</p></div></header>
+<main>
+<section class="stats">
+ <div class="card"><div class="stat-label">Total Students</div><div class="stat-number" id="totalStudents">0</div></div>
+ <div class="card"><div class="stat-label">Courses</div><div class="stat-number" id="totalCourses">0</div></div>
+ <div class="card"><div class="stat-label">Present Today</div><div class="stat-number" id="presentToday">0</div></div>
+</section>
+<section class="layout">
+ <div class="panel">
+  <h2 id="formTitle">Add Student</h2>
+  <form id="studentForm">
+   <input type="hidden" id="studentId">
+   <label for="name">Student Name</label><input id="name" required maxlength="80" placeholder="Enter full name">
+   <label for="roll">Roll Number</label><input id="roll" required maxlength="30" placeholder="e.g. BCA001">
+   <label for="email">Email</label><input id="email" type="email" required placeholder="student@example.com">
+   <label for="course">Course</label><select id="course"><option>BCA</option><option>BBA</option><option>BCOM</option><option>BA</option><option>BSc</option><option>MCA</option></select>
+   <label for="attendance">Today's Attendance</label><select id="attendance"><option>Present</option><option>Absent</option></select>
+   <button class="primary" type="submit" id="saveBtn">Add Student</button>
+   <button class="secondary" type="button" id="cancelBtn" style="display:none;width:100%;margin-top:8px">Cancel Edit</button>
+  </form>
+ </div>
+ <div class="panel">
+  <h2>Student Records</h2>
+  <div class="toolbar"><input id="search" placeholder="Search name, roll number, course..."><button class="secondary" id="sampleBtn" type="button">Add Demo Data</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Name</th><th>Roll No.</th><th>Email</th><th>Course</th><th>Attendance</th><th>Actions</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+  <div id="empty" class="empty">Abhi koi student nahi hai. Pehla student add karein.</div>
+ </div>
+</section>
+<div class="note"><strong>Important:</strong> Yeh GitHub Pages ke liye browser-based demo version hai. Data isi browser/device ke local storage mein save hota hai. PHP/MySQL login aur shared database is version mein nahi hain. Browser data clear karne par records mit sakte hain.</div>
+</main>
+<footer>Student Management System · BCA Final Year Project</footer>
+<script>
+const KEY='bca_student_records_v1';
+let students=JSON.parse(localStorage.getItem(KEY)||'[]');
+const $=id=>document.getElementById(id);
+function persist(){localStorage.setItem(KEY,JSON.stringify(students));render()}
+function stats(){
+ $('totalStudents').textContent=students.length;
+ $('totalCourses').textContent=new Set(students.map(s=>s.course)).size;
+ $('presentToday').textContent=students.filter(s=>s.attendance==='Present').length;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ const q=$('search').value.trim().toLowerCase();
+ const filtered=students.filter(s=>[s.name,s.roll,s.email,s.course].some(v=>v.toLowerCase().includes(q)));
+ $('studentRows').innerHTML=filtered.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.roll)}</td><td>${esc(s.email)}</td><td>${esc(s.course)}</td><td>${s.attendance==='Present'?'🟢':'🔴'} ${esc(s.attendance)}</td><td><div class="actions"><button class="edit" onclick="editStudent('${s.id}')">Edit</button><button class="danger" onclick="deleteStudent('${s.id}')">Delete</button></div></td></tr>`).join('');
+ $('empty').style.display=filtered.length?'none':'block';stats();
+}
+function resetForm(){$('studentForm').reset();$('studentId').value='';$('formTitle').textContent='Add Student';$('saveBtn').textContent='Add Student';$('cancelBtn').style.display='none'}
+$('studentForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const id=$('studentId').value;
+ const record={id:id||String(Date.now()),name:$('name').value.trim(),roll:$('roll').value.trim(),email:$('email').value.trim(),course:$('course').value,attendance:$('attendance').value};
+ if(students.some(s=>s.roll.toLowerCase()===record.roll.toLowerCase()&&s.id!==id)){alert('This roll number already exists.');return}
+ if(id)students=students.map(s=>s.id===id?record:s);else students.push(record);
+ persist();resetForm();
+});
+window.editStudent=id=>{const s=students.find(x=>x.id===id);if(!s)return;$('studentId').value=s.id;$('name').value=s.name;$('roll').value=s.roll;$('email').value=s.email;$('course').value=s.course;$('attendance').value=s.attendance;$('formTitle').textContent='Edit Student';$('saveBtn').textContent='Save Changes';$('cancelBtn').style.display='block';window.scrollTo({top:0,behavior:'smooth'})};
+window.deleteStudent=id=>{if(confirm('Is student record ko delete karna hai?')){students=students.filter(s=>s.id!==id);persist();if($('studentId').value===id)resetForm()}};
+$('cancelBtn').addEventListener('click',resetForm);
+$('search').addEventListener('input',render);
+$('sampleBtn').addEventListener('click',()=>{
+ if(students.length){alert('Demo data sirf empty list mein add hota hai.');return}
+ students=[
+ {id:'demo1',name:'Rahul Sharma',roll:'BCA001',email:'rahul@example.com',course:'BCA',attendance:'Present'},
+ {id:'demo2',name:'Priya Verma',roll:'BCA002',email:'priya@example.com',course:'BCA',attendance:'Absent'},
+ {id:'demo3',name:'Amit Kumar',roll:'BBA001',email:'amit@example.com',course:'BBA',attendance:'Present'}
+ ];persist();
+});
+render();
+</script>
+</body>
+</html>
